@@ -8,6 +8,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 use Tallcms\RedirectManager\Models\Redirect;
+use Tallcms\RedirectManager\Rules\UniqueSourcePath;
 
 class RedirectForm
 {
@@ -22,23 +23,9 @@ class RedirectForm
                     ->maxLength(2048)
                     ->placeholder('/old-page')
                     ->helperText('The path to redirect from (e.g., /old-page). Query strings are ignored.')
-                    ->rules([
+                    ->rules(fn (?Redirect $record) => [
                         'starts_with:/',
-                        function (string $attribute, $value, $fail) use ($schema) {
-                            $normalized = Redirect::normalizePath($value);
-                            $hash = hash('sha256', $normalized);
-                            $record = $schema->getRecord();
-
-                            $query = Redirect::where('source_path_hash', $hash);
-
-                            if ($record) {
-                                $query->where('id', '!=', $record->id);
-                            }
-
-                            if ($query->exists()) {
-                                $fail('A redirect for this path already exists.');
-                            }
-                        },
+                        new UniqueSourcePath($record?->id),
                     ])
                     ->columnSpanFull(),
 
