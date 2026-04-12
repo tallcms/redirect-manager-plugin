@@ -1,0 +1,63 @@
+<?php
+
+namespace Tallcms\RedirectManager\Http\Middleware;
+
+use Closure;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Symfony\Component\HttpFoundation\Response;
+use Tallcms\RedirectManager\Models\Redirect;
+
+class HandleRedirects
+{
+    public function handle(Request $request, Closure $next): Response
+    {
+        // Only handle GET/HEAD requests — don't redirect form submissions
+        if (! in_array($request->method(), ['GET', 'HEAD'])) {
+            return $next($request);
+        }
+
+        $path = Redirect::normalizePath($request->getPathInfo());
+
+        $redirects = $this->getRedirectMap();
+
+        if (isset($redirects[$path])) {
+            $match = $redirects[$path];
+
+            // Atomic hit count update — best-effort analytics
+            try {
+                Redirect::where('id', $match['id'])->update([
+                    'hit_count' => DB::raw('hit_count + 1'),
+                    'last_hit_at' => now(),
+                ]);
+            } catch (\Throwable) {
+                // Don't let hit tracking break the redirect
+            }
+
+            return redirect($match['destination_url'], $match['status_code']);
+        }
+
+        return $next($request);
+    }
+
+    protected function getRedirectMap(): array
+    {
+        return Cache::remember('tallcms.redirects', 3600, function () {
+            if (! Schema::hasTable('tallcms_redirects')) {
+                return [];
+            }
+
+            return Redirect::active()
+                ->get(['id', 'source_path', 'destination_url', 'status_code'])
+                ->keyBy('source_path')
+                ->map(fn ($r) => [
+                    'id' => $r->id,
+                    'destination_url' => $r->destination_url,
+                    'status_code' => $r->status_code,
+                ])
+                ->all();
+        });
+    }
+}

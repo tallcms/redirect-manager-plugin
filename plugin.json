@@ -1,0 +1,18 @@
+{
+    "name": "Redirect Manager",
+    "slug": "redirect-manager",
+    "vendor": "tallcms",
+    "version": "1.0.0",
+    "description": "Manage 301/302 redirects from the admin panel",
+    "author": "TallCMS",
+    "namespace": "Tallcms\\RedirectManager",
+    "provider": "Tallcms\\RedirectManager\\Providers\\RedirectManagerServiceProvider",
+    "filament_plugin": "Tallcms\\RedirectManager\\Filament\\RedirectManagerPlugin",
+    "tags": ["seo", "redirects", "free"],
+    "license_required": false,
+    "license": "MIT",
+    "compatibility": {
+        "php": "^8.2",
+        "tallcms": "^1.0 || ^2.0 || ^3.0"
+    }
+}
