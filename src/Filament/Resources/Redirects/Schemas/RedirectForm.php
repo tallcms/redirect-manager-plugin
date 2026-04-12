@@ -8,6 +8,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 use Tallcms\RedirectManager\Models\Redirect;
+use Tallcms\RedirectManager\Rules\NoSelfRedirect;
 use Tallcms\RedirectManager\Rules\UniqueSourcePath;
 
 class RedirectForm
@@ -35,6 +36,9 @@ class RedirectForm
                     ->maxLength(2048)
                     ->placeholder('/new-page or https://example.com/page')
                     ->helperText('The URL to redirect to — can be a path or full URL')
+                    ->rules([
+                        new NoSelfRedirect,
+                    ])
                     ->columnSpanFull(),
 
                 Select::make('status_code')

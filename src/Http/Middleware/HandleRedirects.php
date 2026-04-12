@@ -26,6 +26,12 @@ class HandleRedirects
         if (isset($redirects[$path])) {
             $match = $redirects[$path];
 
+            // Safety: skip self-redirects to prevent infinite loops
+            $destinationPath = $this->resolveDestinationPath($match['destination_url']);
+            if ($destinationPath === $path) {
+                return $next($request);
+            }
+
             // Atomic hit count update — best-effort analytics
             try {
                 Redirect::where('id', $match['id'])->update([
@@ -40,6 +46,27 @@ class HandleRedirects
         }
 
         return $next($request);
+    }
+
+    protected function resolveDestinationPath(string $destination): ?string
+    {
+        if (str_starts_with($destination, '/')) {
+            return Redirect::normalizePath($destination);
+        }
+
+        $parsed = parse_url($destination);
+
+        if (! isset($parsed['host'])) {
+            return Redirect::normalizePath('/'.$destination);
+        }
+
+        $appHost = parse_url(config('app.url', ''), PHP_URL_HOST);
+
+        if ($appHost && strtolower($parsed['host']) === strtolower($appHost)) {
+            return Redirect::normalizePath($parsed['path'] ?? '/');
+        }
+
+        return null;
     }
 
     protected function getRedirectMap(): array
