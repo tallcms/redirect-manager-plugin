@@ -27,7 +27,7 @@ class HandleRedirects
             $match = $redirects[$path];
 
             // Safety: skip self-redirects to prevent infinite loops
-            $destinationPath = $this->resolveDestinationPath($match['destination_url']);
+            $destinationPath = $this->resolveDestinationPath($request, $match['destination_url']);
             if ($destinationPath === $path) {
                 return $next($request);
             }
@@ -48,7 +48,7 @@ class HandleRedirects
         return $next($request);
     }
 
-    protected function resolveDestinationPath(string $destination): ?string
+    protected function resolveDestinationPath(Request $request, string $destination): ?string
     {
         if (str_starts_with($destination, '/')) {
             return Redirect::normalizePath($destination);
@@ -60,9 +60,16 @@ class HandleRedirects
             return Redirect::normalizePath('/'.$destination);
         }
 
-        $appHost = parse_url(config('app.url', ''), PHP_URL_HOST);
+        $host = strtolower($parsed['host']);
 
-        if ($appHost && strtolower($parsed['host']) === strtolower($appHost)) {
+        // Check against the actual request host (covers multisite, alternate domains)
+        if ($host === strtolower($request->getHost())) {
+            return Redirect::normalizePath($parsed['path'] ?? '/');
+        }
+
+        // Check against configured app URL
+        $appHost = parse_url(config('app.url', ''), PHP_URL_HOST);
+        if ($appHost && $host === strtolower($appHost)) {
             return Redirect::normalizePath($parsed['path'] ?? '/');
         }
 

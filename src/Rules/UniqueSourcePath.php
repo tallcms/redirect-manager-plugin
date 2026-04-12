@@ -19,8 +19,12 @@ class UniqueSourcePath implements ValidationRule
 
         $query = Redirect::where('source_path_hash', $hash);
 
-        if ($this->ignoreId) {
-            $query->where('id', '!=', $this->ignoreId);
+        // When used from Filament forms without an explicit ignoreId,
+        // try to resolve the current record from the route parameter
+        $ignoreId = $this->ignoreId ?? request()->route('record');
+
+        if ($ignoreId) {
+            $query->where('id', '!=', $ignoreId);
         }
 
         if ($query->exists()) {

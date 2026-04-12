@@ -55,14 +55,32 @@ class NoSelfRedirect implements DataAwareRule, ValidationRule
             return Redirect::normalizePath('/'.$destination);
         }
 
-        // Compare host against the current app URL
-        $appHost = parse_url(config('app.url', ''), PHP_URL_HOST);
-
-        if ($appHost && strtolower($parsed['host']) === strtolower($appHost)) {
+        // Compare against both the request host and configured app.url
+        // to catch loops on multisite alternate domains
+        if ($this->isSameHost($parsed['host'])) {
             return Redirect::normalizePath($parsed['path'] ?? '/');
         }
 
         // External URL — can't self-loop
         return null;
+    }
+
+    protected function isSameHost(string $host): bool
+    {
+        $host = strtolower($host);
+
+        // Check against the current request host
+        $requestHost = strtolower(request()->getHost());
+        if ($host === $requestHost) {
+            return true;
+        }
+
+        // Check against configured app URL
+        $appHost = parse_url(config('app.url', ''), PHP_URL_HOST);
+        if ($appHost && $host === strtolower($appHost)) {
+            return true;
+        }
+
+        return false;
     }
 }

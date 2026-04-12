@@ -24,9 +24,9 @@ class RedirectForm
                     ->maxLength(2048)
                     ->placeholder('/old-page')
                     ->helperText('The path to redirect from (e.g., /old-page). Query strings are ignored.')
-                    ->rules(fn (?Redirect $record) => [
+                    ->rules([
                         'starts_with:/',
-                        new UniqueSourcePath($record?->id),
+                        new UniqueSourcePath,
                     ])
                     ->columnSpanFull(),
 
