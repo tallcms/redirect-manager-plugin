@@ -7,7 +7,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
-use Tallcms\RedirectManager\Models\Redirect;
+use Tallcms\RedirectManager\Rules\NoProtectedPath;
 use Tallcms\RedirectManager\Rules\NoSelfRedirect;
 use Tallcms\RedirectManager\Rules\UniqueSourcePath;
 
@@ -27,6 +27,7 @@ class RedirectForm
                     ->rules([
                         'starts_with:/',
                         new UniqueSourcePath,
+                        new NoProtectedPath,
                     ])
                     ->columnSpanFull(),
 
