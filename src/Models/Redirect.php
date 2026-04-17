@@ -45,10 +45,17 @@ class Redirect extends Model
             }
         });
 
-        // Invalidate cache on any change
-        static::created(fn () => Cache::forget('tallcms.redirects'));
-        static::updated(fn () => Cache::forget('tallcms.redirects'));
-        static::deleted(fn () => Cache::forget('tallcms.redirects'));
+        // Invalidate cache on any change — site-scoped when multisite active
+        $clearCache = function (self $redirect) {
+            Cache::forget('tallcms.redirects'); // Always clear global
+            if (isset($redirect->site_id) && $redirect->site_id) {
+                Cache::forget("tallcms.redirects.{$redirect->site_id}");
+            }
+        };
+
+        static::created($clearCache);
+        static::updated($clearCache);
+        static::deleted($clearCache);
     }
 
     public function scopeActive(Builder $query): Builder

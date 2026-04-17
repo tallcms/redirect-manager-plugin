@@ -78,12 +78,24 @@ class HandleRedirects
 
     protected function getRedirectMap(): array
     {
-        return Cache::remember('tallcms.redirects', 3600, function () {
+        $cacheKey = $this->getRedirectCacheKey();
+
+        return Cache::remember($cacheKey, 3600, function () {
             if (! Schema::hasTable('tallcms_redirects')) {
                 return [];
             }
 
-            return Redirect::active()
+            $query = Redirect::active();
+
+            // Filter by current site when multisite is active
+            if (Schema::hasColumn('tallcms_redirects', 'site_id')) {
+                $siteId = $this->resolveCurrentSiteId();
+                if ($siteId) {
+                    $query->where('site_id', $siteId);
+                }
+            }
+
+            return $query
                 ->get(['id', 'source_path', 'destination_url', 'status_code'])
                 ->keyBy('source_path')
                 ->map(fn ($r) => [
@@ -93,5 +105,38 @@ class HandleRedirects
                 ])
                 ->all();
         });
+    }
+
+    /**
+     * Get a site-scoped cache key for the redirect map.
+     */
+    protected function getRedirectCacheKey(): string
+    {
+        if (Schema::hasColumn('tallcms_redirects', 'site_id')) {
+            $siteId = $this->resolveCurrentSiteId();
+            if ($siteId) {
+                return "tallcms.redirects.{$siteId}";
+            }
+        }
+
+        return 'tallcms.redirects';
+    }
+
+    /**
+     * Resolve the current site ID from the frontend domain context.
+     */
+    protected function resolveCurrentSiteId(): ?int
+    {
+        if (app()->bound('tallcms.multisite.resolver')) {
+            try {
+                $resolver = app('tallcms.multisite.resolver');
+                if ($resolver->isResolved() && $resolver->id()) {
+                    return $resolver->id();
+                }
+            } catch (\Throwable) {
+            }
+        }
+
+        return null;
     }
 }
