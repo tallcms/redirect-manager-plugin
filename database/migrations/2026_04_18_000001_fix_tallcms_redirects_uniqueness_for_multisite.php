@@ -73,11 +73,30 @@ return new class extends Migration
                 return false;
             }
 
-            // MySQL/MariaDB/PostgreSQL
+            if ($driver === 'pgsql') {
+                // PostgreSQL: query pg_indexes for unique indexes on the table
+                $indexes = DB::select("
+                    SELECT indexname, indexdef
+                    FROM pg_indexes
+                    WHERE tablename = 'tallcms_redirects'
+                    AND indexdef LIKE '%UNIQUE%'
+                    AND indexdef LIKE '%source_path_hash%'
+                ");
+
+                foreach ($indexes as $index) {
+                    // A single-column unique won't mention site_id in its definition
+                    if (! str_contains($index->indexdef, 'site_id')) {
+                        return true; // Global unique (single column)
+                    }
+                }
+
+                return false;
+            }
+
+            // MySQL/MariaDB
             $indexes = DB::select("SHOW INDEX FROM tallcms_redirects WHERE Column_name = 'source_path_hash' AND Non_unique = 0");
 
             foreach ($indexes as $index) {
-                // Check if it's a single-column index (global) vs composite
                 $indexName = $index->Key_name ?? $index->key_name ?? '';
                 $allCols = DB::select("SHOW INDEX FROM tallcms_redirects WHERE Key_name = ?", [$indexName]);
                 if (count($allCols) === 1) {
