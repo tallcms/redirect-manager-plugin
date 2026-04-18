@@ -21,6 +21,11 @@ class HandleRedirects
 
         $path = Redirect::normalizePath($request->getPathInfo());
 
+        // Never redirect protected paths — prevents lockout from admin panel
+        if ($this->isProtectedPath($path)) {
+            return $next($request);
+        }
+
         $redirects = $this->getRedirectMap();
 
         if (isset($redirects[$path])) {
@@ -74,6 +79,32 @@ class HandleRedirects
         }
 
         return null;
+    }
+
+    /**
+     * Check if a path is protected from redirects.
+     *
+     * Prevents redirect rules from hijacking the admin panel, API,
+     * Livewire, or plugin routes — which would lock admins out.
+     */
+    protected function isProtectedPath(string $path): bool
+    {
+        $panelPath = config('tallcms.filament.panel_path', 'admin');
+
+        $protectedPrefixes = [
+            "/{$panelPath}",
+            '/api',
+            '/livewire',
+            '/_plugins',
+        ];
+
+        foreach ($protectedPrefixes as $prefix) {
+            if ($path === $prefix || str_starts_with($path, $prefix.'/')) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     protected function getRedirectMap(): array

@@ -1,21 +1,16 @@
-# TallCMS Redirect Manager
+# Redirect Manager
 
-A [TallCMS](https://tallcms.com) plugin for managing 301/302 redirects directly from the admin panel. Essential for site migrations, fixing broken links, and SEO hygiene.
+Manage 301/302 redirects from the TallCMS admin panel. Essential for site migrations, fixing broken links, and SEO hygiene.
 
 ## Features
-- Create, edit, and delete redirects from the TallCMS admin panel
+
+- Create, edit, and delete redirects from the admin panel
 - 301 (permanent) and 302 (temporary) status codes
 - Toggle redirects active/inactive without deleting
 - Hit counter and last-hit timestamp for each redirect
 - Bulk activate, deactivate, and delete
 - Cached redirect map for fast lookups (1-hour TTL, auto-invalidated on changes)
 - Global middleware — intercepts requests before route resolution
-
-## Requirements
-
-- TallCMS Core or Pro
-- PHP 8.2+
-- Laravel 11+
 
 ## Installation
 
@@ -69,7 +64,7 @@ Navigate to **Admin > Configuration > Redirects** to manage redirects.
 
 ## How It Works
 
-This plugin registers a global TallCMS middleware that runs before route resolution. On every GET/HEAD request:
+The plugin registers a global middleware that runs before route resolution. On every GET/HEAD request:
 
 1. The request path is normalized (leading slash, trailing slash stripped)
 2. Looked up against a cached map of active redirects

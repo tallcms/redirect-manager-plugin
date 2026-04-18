@@ -17,6 +17,15 @@ return new class extends Migration
             $table->foreignId('site_id')->nullable()->after('id')
                 ->constrained('tallcms_sites')->nullOnDelete();
             $table->index('site_id');
+
+            // Replace global unique on source_path_hash with site-scoped unique.
+            // Two sites should be able to redirect the same path.
+            try {
+                $table->dropUnique(['source_path_hash']);
+            } catch (\Throwable) {
+                // Index name may differ or not exist on SQLite
+            }
+            $table->unique(['site_id', 'source_path_hash']);
         });
 
         // Backfill: assign to default site
@@ -33,6 +42,13 @@ return new class extends Migration
         }
 
         Schema::table('tallcms_redirects', function (Blueprint $table) {
+            try {
+                $table->dropUnique(['site_id', 'source_path_hash']);
+            } catch (\Throwable) {
+            }
+
+            $table->unique('source_path_hash');
+
             try {
                 $table->dropConstrainedForeignId('site_id');
             } catch (\Throwable) {

@@ -16,6 +16,7 @@ class Redirect extends Model
         'status_code',
         'is_active',
         'note',
+        'site_id',
     ];
 
     protected function casts(): array
