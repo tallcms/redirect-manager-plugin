@@ -77,10 +77,10 @@ class RedirectsTable
                 TernaryFilter::make('is_active')
                     ->label('Active'),
             ])
-            ->actions([
+            ->recordActions([
                 EditAction::make(),
             ])
-            ->bulkActions([
+            ->toolbarActions([
                 BulkActionGroup::make([
                     BulkAction::make('activate')
                         ->label('Activate')
